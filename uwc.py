@@ -156,6 +156,7 @@ def country():
 
 @app.route("/about")
 def about():
+    test = "testing GitHub
     return render_template('about.html')
 
 
