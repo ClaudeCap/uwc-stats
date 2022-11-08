@@ -5,17 +5,18 @@ from fuzzywuzzy import fuzz
 
 from iso3166 import countries
 
-import csv
+import math
 import sqlite3
 
 
 
+
 class UserFilterDavis(FlaskForm):
-    name = StringField('name')
-    country = StringField('country')
-    uwc = StringField('uwc')
-    school = StringField('school')
-    year = StringField('year')
+    name = StringField('Name')
+    country = StringField('Country')
+    uwc = StringField('UWC')
+    school = StringField('Undergraduate')
+    year = StringField('Year')
     submit = SubmitField('form Davis')
 
 
@@ -85,12 +86,6 @@ def fuzzywuzzy_check_w_string(str2Match, strOption, cut_off):
 
 
 
-def outlier_check(str2Match, list_x):
-    strOption = fuzzywuzzy_check_w_list(str2Match, list_x, 95)
-    if (strOption) != None:
-        return strOption
-
-
 
 # Construct a list of countries from the library
 list_countries = []
@@ -142,6 +137,7 @@ list_uwc = [
     "East Africa",
     "Simon Bolivar UWC of Agriculture"
 ]
+list_uwc.sort()
 
 
 
@@ -153,9 +149,9 @@ list_school = []
 list_school_alt = [
     ("Massachusetts Institute of Technology", "MIT"),
     ("St. Johnâ€™s College", "St. John's College"),
-    ("Harvard University", "Harvard College"),
-    ("Wesleyan University", "Wesleyan College"),
-    ("St. Lawrence University", "St. Lawrence College")
+    ("Harvard College", "Harvard University"),
+    ("Wesleyan College", "Wesleyan University"),
+    ("St. Lawrence College", "St. Lawrence University")
 ]
 
 # with open('davis_scholar_database.csv', 'r') as csv_file:
@@ -164,12 +160,15 @@ list_school_alt = [
 #     for line in csv_reader:
 #         school = line['School']
 
+#         # School already exist in the school list
 #         if fuzzywuzzy_check_w_list(school, list_school, 90) != None:
 #             # print(school + "---->" + fuzzywuzzy_check_w_list(school, list_school, 90))
 #             school = fuzzywuzzy_check_w_list(school, list_school, 90)
 #         else:
 
+#             # Checking if school is an outlier
 #             outlier_school = False
+
 #             # Enter an invalid or non-string as School
 #             if len(school) == 0 or school == None:
 #                 outlier_school = True
@@ -179,35 +178,37 @@ list_school_alt = [
 #             # Enter Country as School
 #             elif fuzzywuzzy_check_w_list(school, list_countries, 90) != None:
 #                 outlier_school = True
-#             else: 
-#                 # Enter Alt country name as School
+#             elif fuzzywuzzy_check_w_list(school, list_countries, 90) == None:
 #                 for alt in list_countries_alt:
 #                     if fuzzywuzzy_check_w_string(school, alt[0], 90) != None:
 #                         outlier_school = True
 #                         break
-#                 # Enter Old country name as School
-#                 for chnage in list_previous_countries:
-#                     if fuzzywuzzy_check_w_string(school, alt[0], 90) != None:
+#                 for previous in list_previous_countries:
+#                     if fuzzywuzzy_check_w_string(school, previous[0], 90) != None:
 #                         outlier_school = True
 #                         break
 
 #             # Check for Alt School name
 #             is_alt = False
 #             for alt in list_school_alt:
-#                 if school == alt[0]:
+#                 if fuzzywuzzy_check_w_string(school, alt[0], 90) != None:
 #                     is_alt = True
 #                     break
             
+#             # If it is not an outlier and not an alt name
+#             # Then it does not exist and need to add to the list
 #             if outlier_school == False and is_alt == False:
 #                 list_school.append(school)
     
 #     print(list_school)
 
+
+
 #####################################################
 # Run uwc_back.py in above line to print out the list
 #####################################################
-list_school = ['Princeton University', 'College of the Atlantic', 'Wellesley College', 'Colby College', 'Middlebury College', 'San Francisco Art Institute', 'Connecticut College', 'Carleton College', 'University of Virginia', 'Hood College', 'Hamilton College', 'Johns Hopkins University', 'Methodist University', 'Earlham College', 'Swarthmore College', 'Macalester', 'Westminster College', 'Cornell University', 'Harvard College', 'Lake Forest College', 'Vassar College', 'Skidmore College', 'Dickinson College', 'Brown University', 'Bates College', 'School of the Art Institute of Chicago', 'Smith College', 'Dartmouth College', 'Yale University', 'Whitman College', 'Williams College', 'Colorado College', 'Oberlin College', 'Mount Holyoke College', 'Lafayette College', 'University of Richmond', 'Franklin and Marshall College', 'Bryn Mawr College', 'Lewis and Clark College', 'Washington and Lee University', 'Colgate University', 'Amherst College', 'Tufts University', 'Brandeis University', 'University of Florida', 'Wheaton College', 'Luther College', 'Grinnell College', 'The Boston Conservatory', 'Barnard College', 'Bucknell University', 'Bowdoin College', 'Lehigh University', 'Union College', 'Columbia University', 'Kenyon College', 'Denison University', 'Wesleyan College', 'Trinity College', 'Haverford College', 'Claremont McKenna College', 'University of Pennsylvania', 'Northwestern University', 'Notre Dame of Maryland', 'The College of Idaho', 'University of Chicago', 'Gettysburg College', 'Duke University', 'Agnes Scott College', 'University of North Carolina at Chapel Hill', 'College of the Holy Cross', 'Wartburg College', 'Simmons College', 'Clark University', 'Ringling College of Art and Design', 'Stanford University', 'University of Oklahoma', 'Reed College', 'Scripps College', 'Kalamazoo College', 'Sarah Lawrence College', 'University of Notre Dame', 'University of Michigan', 'Georgetown University', 'St. Olaf College', 'Occidental College', 'Pomona College', 'Randolph-Macon College', "St. John's College", 'Wesleyan Unviersity', 'New York University', 'MIT', 'Bennington College', 'Savannah College of Art and Design', 'Davidson College', 'University of Rochester', 'University of California Berkeley', 'Pitzer College', 'Emory University', 'Case Western Reserve University', 'Worcester Polytechnic Institute', 'Babson College', 'George Washington University']
-
+list_school = ['Princeton University', 'College of the Atlantic', 'Wellesley College', 'Colby College', 'Middlebury College', 'San Francisco Art Institute', 'Connecticut College', 'Carleton College', 'University of Virginia', 'Hood College', 'Hamilton College', 'Johns Hopkins University', 'Methodist University', 'Earlham College', 'Swarthmore College', 'Macalester', 'Westminster College', 'Harvard University', 'Cornell University', 'Lake Forest College', 'Vassar College', 'Skidmore College', 'Dickinson College', 'Brown University', 'Bates College', 'School of the Art Institute of Chicago', 'Wesleyan University', 'Smith College', 'Dartmouth College', 'Yale University', 'St. Lawrence University', 'Whitman College', 'Williams College', 'Colorado College', 'Oberlin College', 'Mount Holyoke College', 'Lafayette College', 'University of Richmond', 'Franklin and Marshall College', 'Bryn Mawr College', 'Lewis and Clark College', 'Washington and Lee University', 'Colgate University', 'Amherst College', 'Tufts University', 'Brandeis University', 'University of Florida', 'Wheaton College', 'Luther College', 'Grinnell College', 'The Boston Conservatory', 'Barnard College', 'Bucknell University', 'Bowdoin College', 'Lehigh University', 'Union College', 'Columbia University', 'Kenyon College', 'Denison University', 'Trinity College', 'Haverford College', 'Claremont McKenna College', 'University of Pennsylvania', 'Northwestern University', 'Notre Dame of Maryland', 'The College of Idaho', 'University of Chicago', 'Gettysburg College', 'Duke University', 'Agnes Scott College', 'University of North Carolina at Chapel Hill', 'College of the Holy Cross', 'Wartburg College', 'Simmons College', 'Clark University', 'Ringling College of Art and Design', 'Stanford University', 'University of Oklahoma', 'Reed College', 'Scripps College', 'Kalamazoo College', 'University of Notre Dame', 'University of Michigan', 'Georgetown University', 'St. Olaf College', 'Occidental College', 'Pomona College', 'Randolph-Macon College', 'New York University', 'MIT', 'Bennington College', 'Savannah College of Art and Design', 'Davidson College', 'University of Rochester', 'University of California Berkeley', 'Pitzer College', 'Emory University', 'Case Western Reserve University', 'Worcester Polytechnic Institute', 'Babson College', 'George Washington University']
+list_school.sort()
 
 
 def summary(type_key, type_value_1, type_value_2, list_key, list_value_1, list_value_2):
@@ -247,7 +248,6 @@ def summary(type_key, type_value_1, type_value_2, list_key, list_value_1, list_v
             value_1_out_of_key = round((max(v)/total_scholars) * 100)
 
 
-
         # Data format
         # key_to_value_2 = {
         #     "Cambodia": 10,
@@ -273,8 +273,6 @@ def summary(type_key, type_value_1, type_value_2, list_key, list_value_1, list_v
             value_2_out_of_key = round((max(v)/total_scholars) * 100)
 
 
-
-
         summary_key = [key, total_scholars, popular_value_1, value_1_out_of_key, popular_value_2, value_2_out_of_key]
         summary_all.append(summary_key)
 
@@ -286,8 +284,63 @@ def summary(type_key, type_value_1, type_value_2, list_key, list_value_1, list_v
         # print(f"with average of {country_acceptance_among_uwc}% acceptance among the school")
 
 
-
-
     conn.commit()
 
     return summary_all
+
+
+
+def display_summary(all_key_img_src, type_key, type_value_1, type_value_2, list_key, list_value_1, list_value_2):
+
+    # Empty Card
+    empty_card = ["Empty", "0", "?", "0", "?", "0"]
+
+    # Data to display on phone
+    phone_summary_all_type_key = summary(type_key, type_value_1, type_value_2, list_key, list_value_1, list_value_2)
+
+    # Data to display on desktop
+    num_grid_row = math.ceil(len(phone_summary_all_type_key) / 3)
+    desktop_summary_all_type_key = []
+    row = 0
+    ii = 0
+    while row < num_grid_row:
+
+        if len(phone_summary_all_type_key) <= (ii+1):
+            row_data = [phone_summary_all_type_key[ii], empty_card, empty_card]
+            desktop_summary_all_type_key.append(row_data)
+            break
+        elif len(phone_summary_all_type_key) <= (ii+2):
+            row_data = [phone_summary_all_type_key[ii], phone_summary_all_type_key[ii+1], empty_card]
+            desktop_summary_all_type_key.append(row_data)
+            break
+
+        row_data = [phone_summary_all_type_key[ii], phone_summary_all_type_key[ii+1], phone_summary_all_type_key[ii+2]]
+        desktop_summary_all_type_key.append(row_data)
+        row += 1
+        ii = 3*row
+
+    # Data to display on tablet
+    num_grid_row = math.ceil(len(phone_summary_all_type_key) / 2)
+    tablet_summary_all_type_key = []
+    row = 0
+    ii = 0
+    while row < num_grid_row:
+
+        if len(phone_summary_all_type_key) <= (ii+1):
+            row_data = [phone_summary_all_type_key[ii], empty_card]
+            tablet_summary_all_type_key.append(row_data)
+            break
+
+        row_data = [phone_summary_all_type_key[ii], phone_summary_all_type_key[ii+1]]
+        tablet_summary_all_type_key.append(row_data)
+        row += 1
+        ii = 2*row
+
+    # Adding in empty UWC to the list for empty card
+    list_key.append("Empty")
+    all_key_img_src.append("https://montevista.greatheartsamerica.org/wp-content/uploads/sites/2/2016/11/default-placeholder.png")
+
+
+    output_display_summary = [desktop_summary_all_type_key, tablet_summary_all_type_key, phone_summary_all_type_key]
+
+    return output_display_summary

@@ -8,9 +8,11 @@ app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
 from uwc_back import UserFilterDavis, construct_filter_query
 from uwc_back import list_school, list_uwc, list_countries
-from uwc_back import summary
 
-from img_scrap import all_uwc_img_src, all_country_img_src
+from uwc_back import summary
+from uwc_back import display_summary
+
+from img_scrap import all_uwc_img_src, all_country_img_src, all_school_img_src
 
 import math
 
@@ -44,119 +46,52 @@ def home():
 
 @app.route("/uwc")
 def uwc():
-    # Empty Card
-    empty_card = ["Unknown", "0", "?", "0", "?", "0"]
-
-    # Data to display on phone
-    phone_summary_all_uwc = summary("uwc", "school", "country", list_uwc, list_school, list_countries)
-
-    # Data to display on desktop
-    num_grid_row = math.ceil(len(phone_summary_all_uwc) / 3)
-    desktop_summary_all_uwc = []
-    row = 0
-    ii = 0
-    while row < num_grid_row:
-
-        if len(phone_summary_all_uwc) <= (ii+1):
-            row_data = [phone_summary_all_uwc[ii], empty_card, empty_card]
-            desktop_summary_all_uwc.append(row_data)
-            break
-        elif len(phone_summary_all_uwc) <= (ii+2):
-            row_data = [phone_summary_all_uwc[ii], phone_summary_all_uwc[ii+1], empty_card]
-            desktop_summary_all_uwc.append(row_data)
-            break
-
-        row_data = [phone_summary_all_uwc[ii], phone_summary_all_uwc[ii+1], phone_summary_all_uwc[ii+2]]
-        desktop_summary_all_uwc.append(row_data)
-        row += 1
-        ii = 3*row
     
-    # Data to display on tablet
-    num_grid_row = math.ceil(len(phone_summary_all_uwc) / 2)
-    tablet_summary_all_uwc = []
-    row = 0
-    ii = 0
-    while row < num_grid_row:
-
-        if len(phone_summary_all_uwc) <= (ii+1):
-            row_data = [phone_summary_all_uwc[ii], empty_card]
-            tablet_summary_all_uwc.append(row_data)
-            all_uwc_img_src.append("https://montevista.greatheartsamerica.org/wp-content/uploads/sites/2/2016/11/default-placeholder.png")
-            break
-
-        row_data = [phone_summary_all_uwc[ii], phone_summary_all_uwc[ii+1]]
-        tablet_summary_all_uwc.append(row_data)
-        row += 1
-        ii = 2*row
+    output_display_summary = display_summary(all_uwc_img_src, "uwc", "school", "country", list_uwc, list_school, list_countries)
     
-    # Adding in empty UWC to the list for empty card
-    list_uwc.append("Unknown")
-    all_uwc_img_src.append("https://montevista.greatheartsamerica.org/wp-content/uploads/sites/2/2016/11/default-placeholder.png")
+    desktop_summary_all_uwc = output_display_summary[0]
+    tablet_summary_all_uwc = output_display_summary[1]
+    phone_summary_all_uwc = output_display_summary[2]
 
-    return render_template('uwc.html', desktop_summary_all_uwc = desktop_summary_all_uwc, tablet_summary_all_uwc = tablet_summary_all_uwc, phone_summary_all_uwc = phone_summary_all_uwc, all_uwc_img_src = all_uwc_img_src, list_uwc = list_uwc)
+    return render_template("uwc.html", desktop_summary_all_uwc = desktop_summary_all_uwc, tablet_summary_all_uwc = tablet_summary_all_uwc, phone_summary_all_uwc = phone_summary_all_uwc, all_uwc_img_src = all_uwc_img_src, list_uwc = list_uwc)
 
 
 
 
 @app.route("/country")
 def country():
-    # Empty
-    empty_card = ["Unknown", "0", "?", "0"]
+    output_display_summary = display_summary(all_country_img_src, "country", "school", "uwc", list_countries, list_school, list_uwc)
 
-    # Data to display on phone
-    phone_summary_all_country = summary("country", "school", "uwc", list_countries, list_school, list_uwc)
-
-    # Data to display on desktop
-    num_grid_row = math.ceil(len(phone_summary_all_country) / 3)
-    desktop_summary_all_country = []
-    row = 0;
-    ii = 0;
-    while row < num_grid_row:
-
-        if len(phone_summary_all_country) <= (ii+1):
-            row_data = [phone_summary_all_country[ii], empty_card, empty_card]
-            desktop_summary_all_country.append(row_data)
-            break
-        elif len(phone_summary_all_country) <= (ii+2):
-            row_data = [phone_summary_all_country[ii], phone_summary_all_country[ii+1], empty_card]
-            desktop_summary_all_country.append(row_data)
-            break
-        
-        row_data = [phone_summary_all_country[ii], phone_summary_all_country[ii+1], phone_summary_all_country[ii+2]]
-        desktop_summary_all_country.append(row_data)
-        row += 1
-        ii = 3*row
-    
-    # Data to display on tablet
-    num_grid_row = math.ceil(len(phone_summary_all_country) / 2)
-    tablet_summary_all_country = []
-    row = 0
-    ii = 0
-    while row < num_grid_row:
-
-        if len(phone_summary_all_country) <= (ii+1):
-            row_data = [phone_summary_all_country[ii], empty_card]
-            tablet_summary_all_country.append(row_data)
-            break
-    
-        row_data = [phone_summary_all_country[ii], phone_summary_all_country[ii+1]]
-        tablet_summary_all_country.append(row_data)
-        row += 1
-        ii = 2*row
-
-    # Adding in empty UWC to the list for empty card
-    list_countries.append("Unknown")
-    all_country_img_src.append("https://montevista.greatheartsamerica.org/wp-content/uploads/sites/2/2016/11/default-placeholder.png")
-
+    desktop_summary_all_country = output_display_summary[0]
+    tablet_summary_all_country = output_display_summary[1]
+    phone_summary_all_country = output_display_summary[2]
 
     return render_template("country.html", desktop_summary_all_country = desktop_summary_all_country, tablet_summary_all_country = tablet_summary_all_country, phone_summary_all_country = phone_summary_all_country, all_country_img_src = all_country_img_src, list_countries = list_countries)
 
 
 
 
+
+
+
+@app.route("/undergraduate")
+# On UI it is undergrad
+# Backend everything is refer to as school for simplicity
+@app.route("/school")
+def school():
+    output_display_summary = display_summary(all_school_img_src, "school", "uwc", "country", list_school, list_uwc, list_countries)
+
+    desktop_summary_all_school = output_display_summary[0]
+    tablet_summary_all_school = output_display_summary[1]
+    phone_summary_all_school = output_display_summary[2]
+
+    return render_template("school.html", desktop_summary_all_school = desktop_summary_all_school, tablet_summary_all_school = tablet_summary_all_school, phone_summary_all_school = phone_summary_all_school, all_school_img_src = all_school_img_src, list_school = list_school)
+
+
+
+
 @app.route("/about")
 def about():
-    test = "testing GitHub
     return render_template('about.html')
 
 
