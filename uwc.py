@@ -16,6 +16,7 @@ from img_scrap import all_uwc_img_src, all_country_img_src, all_school_img_src
 
 import math
 
+
 @app.route("/", methods=['GET', 'POST'])
 @app.route("/home", methods=['GET', 'POST'])
 def home():
@@ -43,11 +44,14 @@ def home():
 
 
 
-
 @app.route("/uwc")
 def uwc():
-    
-    output_display_summary = display_summary(all_uwc_img_src, "uwc", "school", "country", list_uwc, list_school, list_countries)
+   
+    from pre_uwc_summary import uwc_output_display_summary
+    output_display_summary = uwc_output_display_summary
+
+    list_uwc.append("Empty")
+    all_uwc_img_src.append("https://montevista.greatheartsamerica.org/wp-content/uploads/sites/2/2016/11/default-placeholder.png")
     
     desktop_summary_all_uwc = output_display_summary[0]
     tablet_summary_all_uwc = output_display_summary[1]
@@ -56,11 +60,13 @@ def uwc():
     return render_template("uwc.html", desktop_summary_all_uwc = desktop_summary_all_uwc, tablet_summary_all_uwc = tablet_summary_all_uwc, phone_summary_all_uwc = phone_summary_all_uwc, all_uwc_img_src = all_uwc_img_src, list_uwc = list_uwc)
 
 
-
-
 @app.route("/country")
 def country():
-    output_display_summary = display_summary(all_country_img_src, "country", "school", "uwc", list_countries, list_school, list_uwc)
+    from pre_country_summary import country_output_display_summary
+    output_display_summary = country_output_display_summary
+
+    list_countries.append("Empty")
+    all_country_img_src.append("https://montevista.greatheartsamerica.org/wp-content/uploads/sites/2/2016/11/default-placeholder.png")
 
     desktop_summary_all_country = output_display_summary[0]
     tablet_summary_all_country = output_display_summary[1]
@@ -73,13 +79,16 @@ def country():
 
 
 
-
 @app.route("/undergraduate")
 # On UI it is undergrad
 # Backend everything is refer to as school for simplicity
 @app.route("/school")
 def school():
-    output_display_summary = display_summary(all_school_img_src, "school", "uwc", "country", list_school, list_uwc, list_countries)
+    from pre_school_summary import school_output_display_summary
+    output_display_summary = school_output_display_summary
+
+    list_school.append("Empty")
+    all_school_img_src.append("https://montevista.greatheartsamerica.org/wp-content/uploads/sites/2/2016/11/default-placeholder.png")
 
     desktop_summary_all_school = output_display_summary[0]
     tablet_summary_all_school = output_display_summary[1]

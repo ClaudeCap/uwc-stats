@@ -336,10 +336,12 @@ def display_summary(all_key_img_src, type_key, type_value_1, type_value_2, list_
         row += 1
         ii = 2*row
 
-    # Adding in empty UWC to the list for empty card
-    list_key.append("Empty")
-    all_key_img_src.append("https://montevista.greatheartsamerica.org/wp-content/uploads/sites/2/2016/11/default-placeholder.png")
-
+    ############################################################################
+    # Add Empty to the list where the fuction display summary is being call
+    # # Adding in empty UWC to the list for empty card
+    # list_key.append("Empty")
+    # all_key_img_src.append("https://montevista.greatheartsamerica.org/wp-content/uploads/sites/2/2016/11/default-placeholder.png")
+    ############################################################################
 
     output_display_summary = [desktop_summary_all_type_key, tablet_summary_all_type_key, phone_summary_all_type_key]
 
