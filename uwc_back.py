@@ -17,17 +17,14 @@ class UserFilterDavis(FlaskForm):
     uwc = StringField('UWC')
     school = StringField('Undergraduate')
     year = StringField('Year')
-    submit = SubmitField('form Davis')
-
-
-
+    submit = SubmitField('Filter Data')
 
 def construct_filter_query(form):
 
     filter_query = 'SELECT name, country, uwc, school, year FROM scholars'
 
     if form.name.data != "" or form.country.data != "" or form.uwc.data != "" or form.school.data != "" or form.year.data != "":
-        filter_query = filter_query + " where"
+        filter_query = filter_query + " WHERE"
 
     # Flash header
     if form.name.data != "":
@@ -56,6 +53,63 @@ def construct_filter_query(form):
     
     return filter_query
 
+def construct_count_query(form):
+    count_query = "SELECT COUNT(*) FROM scholars"
+
+    if form.country.data != "" or form.uwc.data != "" or form.school.data != "":
+        count_query = count_query + " WHERE"
+   
+    if form.country.data != "":
+        count_query = count_query + " country = " + "\"" + form.country.data + "\""
+    if form.uwc.data != "":
+        if form.country.data != "":
+            count_query = count_query + " AND"
+        count_query = count_query + " uwc = " + "\"" + form.uwc.data + "\""
+    if form.school.data != "":
+        if form.country.data != "" or form.uwc.data != "":
+            count_query = count_query + " AND"
+        count_query = count_query + " school = " + "\"" + form.school.data + "\""
+
+    return count_query
+
+
+
+def correction_filter(country, uwc, school):
+    all_correction = []
+    if country != None:
+        cut_off = 100
+        while cut_off > 0:
+            if fuzzywuzzy_check_w_list(country, list_countries, cut_off) != None:
+                result = ["country", fuzzywuzzy_check_w_list(country, list_countries, cut_off)]
+                all_correction.append(result)
+                break
+
+            cut_off = cut_off - 10
+        
+
+    if uwc != None:
+        cut_off = 100
+        while cut_off > 0:
+            if fuzzywuzzy_check_w_list(uwc, list_uwc, cut_off) != None:
+                result = ["uwc", fuzzywuzzy_check_w_list(uwc, list_uwc, cut_off)]
+                all_correction.append(result)
+                break
+
+            cut_off = cut_off - 10
+        
+
+    if school != None:
+        cut_off = 100
+        while cut_off > 0:
+            if fuzzywuzzy_check_w_list(school, list_school, cut_off) != None:
+                result = ["school", fuzzywuzzy_check_w_list(school, list_school, cut_off)]
+                all_correction.append(result)
+                break
+
+            cut_off = cut_off - 10
+        
+
+    return all_correction
 
 
 

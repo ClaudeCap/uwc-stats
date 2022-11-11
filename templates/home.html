@@ -39,6 +39,28 @@
 </div>
 
 
+{% if need_correction == True %}
+<table class="tablet my-5">
+    <tbody>
+        <tr>
+            <td class="mx-5 pe-4">
+                Top match data <br>
+                <span class="fs-6">(Click </span>
+                <span class="fs-6 fw-bold"> "Filter Data"</span>
+                <span class="fs-6"> to reload correction)</span>
+            </td>
+      
+            <td>
+                <button type="button" class="btn btn-success">{{combine_correction}}</button>
+            </td>
+
+        </tr>
+    </tbody>
+</table>
+{% endif %}
+
+
+
 
 
 <!-- Display table from input filter-->
