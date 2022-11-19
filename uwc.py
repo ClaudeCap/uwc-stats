@@ -10,12 +10,16 @@ app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 from uwc_back import UserFilterDavis, construct_filter_query, construct_count_query, correction_filter
 from uwc_back import list_school, list_uwc, list_countries
 
-from uwc_back import summary
-from uwc_back import display_summary
+from uwc_back import check_detail_of
 
 from img_scrap import all_uwc_img_src, all_country_img_src, all_school_img_src
 
-import math
+import pandas as pd
+import json
+import plotly
+import plotly.express as px
+
+from uwc_back import construct_line_chart, construct_bart10_chart, construct_bart05_chart
 
 
 @app.route("/", methods=['GET', 'POST'])
@@ -24,11 +28,9 @@ def home():
 
     filter_query = "SELECT name, country, uwc, school, year FROM scholars"
     count_query = "SELECT COUNT(*) FROM scholars"
-
     if 'filter_query' in session:
         filter_query = session['filter_query']
         session.pop('filter_query', None)
-
     if "count_query" in session:
         count_query = session['count_query']
         session.pop('count_query', None)
@@ -38,10 +40,11 @@ def home():
     form = UserFilterDavis()
     if form.validate_on_submit():
 
-        # When submit, make new query and render new templalte
+        # When submit, construct the filter query
         filter_query = construct_filter_query(form)
 
         # If user actually enter something in the form
+        # Store the constructed filter query in session
         if filter_query != "SELECT name, country, uwc, school, year FROM scholars":
 
             session['filter_query'] = filter_query
@@ -117,7 +120,7 @@ def home():
 
 
 
-@app.route("/uwc")
+@app.route("/uwc", methods=['GET', 'POST'])
 def uwc():
    
     from pre_uwc_summary import uwc_output_display_summary
@@ -130,10 +133,29 @@ def uwc():
     tablet_summary_all_uwc = output_display_summary[1]
     phone_summary_all_uwc = output_display_summary[2]
 
+
+    if request.method == 'POST':
+        view_detail = check_detail_of(phone_summary_all_uwc)
+
+        line_chart = construct_line_chart("uwc", view_detail)
+        line_chart_JSON = json.dumps(line_chart, cls=plotly.utils.PlotlyJSONEncoder)
+        session['line_chart_JSON'] = line_chart_JSON
+
+        bart10_chart = construct_bart10_chart("uwc", view_detail, "school", list_school)
+        bart10_chart_JSON = json.dumps(bart10_chart, cls=plotly.utils.PlotlyJSONEncoder)
+        session['bart10_chart_JSON'] = bart10_chart_JSON
+
+        bart05_chart = construct_bart05_chart("uwc", view_detail, "country", list_countries)
+        bart05_chart_JSON = json.dumps(bart05_chart, cls=plotly.utils.PlotlyJSONEncoder)
+        session['bart05_chart_JSON'] = bart05_chart_JSON
+
+        return redirect("/detail")
+        
+
     return render_template("uwc.html", desktop_summary_all_uwc = desktop_summary_all_uwc, tablet_summary_all_uwc = tablet_summary_all_uwc, phone_summary_all_uwc = phone_summary_all_uwc, all_uwc_img_src = all_uwc_img_src, list_uwc = list_uwc)
 
 
-@app.route("/country")
+@app.route("/country", methods=['GET', 'POST'])
 def country():
     from pre_country_summary import country_output_display_summary
     output_display_summary = country_output_display_summary
@@ -145,13 +167,31 @@ def country():
     tablet_summary_all_country = output_display_summary[1]
     phone_summary_all_country = output_display_summary[2]
 
+    if request.method == 'POST':
+        view_detail = check_detail_of(phone_summary_all_country)
+        
+        line_chart = construct_line_chart("country", view_detail)
+        line_chart_JSON = json.dumps(line_chart, cls=plotly.utils.PlotlyJSONEncoder)
+        session['line_chart_JSON'] = line_chart_JSON
+
+        bart10_chart = construct_bart10_chart("country", view_detail, "school", list_school)
+        bart10_chart_JSON = json.dumps(bart10_chart, cls=plotly.utils.PlotlyJSONEncoder)
+        session['bart10_chart_JSON'] = bart10_chart_JSON
+
+        bart05_chart = construct_bart05_chart("country", view_detail, "uwc", list_uwc)
+        bart05_chart_JSON = json.dumps(bart05_chart, cls=plotly.utils.PlotlyJSONEncoder)
+        session['bart05_chart_JSON'] = bart05_chart_JSON
+
+        return redirect("/detail")
+
+
     return render_template("country.html", desktop_summary_all_country = desktop_summary_all_country, tablet_summary_all_country = tablet_summary_all_country, phone_summary_all_country = phone_summary_all_country, all_country_img_src = all_country_img_src, list_countries = list_countries)
 
 
-@app.route("/undergraduate")
+@app.route("/undergraduate", methods=['GET', 'POST'])
 # On UI it is undergrad
 # Backend everything is refer to as school for simplicity
-@app.route("/school")
+@app.route("/school", methods=['GET', 'POST'])
 def school():
     from pre_school_summary import school_output_display_summary
     output_display_summary = school_output_display_summary
@@ -163,7 +203,38 @@ def school():
     tablet_summary_all_school = output_display_summary[1]
     phone_summary_all_school = output_display_summary[2]
 
+    if request.method == 'POST':
+        view_detail = check_detail_of(phone_summary_all_school)
+        
+        line_chart = construct_line_chart("school", view_detail)
+        line_chart_JSON = json.dumps(line_chart, cls=plotly.utils.PlotlyJSONEncoder)
+        session['line_chart_JSON'] = line_chart_JSON
+
+        bart10_chart = construct_bart10_chart("school", view_detail, "country", list_countries)
+        bart10_chart_JSON = json.dumps(bart10_chart, cls=plotly.utils.PlotlyJSONEncoder)
+        session['bart10_chart_JSON'] = bart10_chart_JSON
+
+        bart05_chart = construct_bart05_chart("school", view_detail, "uwc", list_uwc)
+        bart05_chart_JSON = json.dumps(bart05_chart, cls=plotly.utils.PlotlyJSONEncoder)
+        session['bart05_chart_JSON'] = bart05_chart_JSON
+
+        return redirect("/detail")
+
+
     return render_template("school.html", desktop_summary_all_school = desktop_summary_all_school, tablet_summary_all_school = tablet_summary_all_school, phone_summary_all_school = phone_summary_all_school, all_school_img_src = all_school_img_src, list_school = list_school)
+
+
+
+
+@app.route("/detail")
+def detail():
+    line_chart_JSON = session['line_chart_JSON']
+    bart10_chart_JSON = session['bart10_chart_JSON']
+    bart05_chart_JSON = session['bart05_chart_JSON']
+
+    return render_template("detail.html", line_chart_JSON=line_chart_JSON, bart10_chart_JSON=bart10_chart_JSON, bart05_chart_JSON=bart05_chart_JSON)
+
+
 
 
 @app.route("/about")

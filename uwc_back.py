@@ -1,4 +1,4 @@
-from flask import flash
+from flask import flash, session
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from fuzzywuzzy import fuzz
@@ -400,3 +400,265 @@ def display_summary(all_key_img_src, type_key, type_value_1, type_value_2, list_
     output_display_summary = [desktop_summary_all_type_key, tablet_summary_all_type_key, phone_summary_all_type_key]
 
     return output_display_summary
+
+
+
+
+
+# The value from submit button only return one word
+# "University of California"
+# Will only return "University"
+# It take in other info and double check to see which one is the correct one
+from flask import request
+
+def check_detail_of(phone_summary_all_x):
+    detail_of = request.form.get('view_detail')
+    safety_check1 = request.form.get('safety_check1')
+    safety_check3 = request.form.get('safety_check3')
+    safety_check5 = request.form.get('safety_check5')
+
+    for data in phone_summary_all_x:
+        if data[0] == detail_of:
+            break
+        
+        fw_detail_of = data[0].split()
+        fw_detail_of = fw_detail_of[0]
+
+        gt = str(data[1])+str(data[3])+str(data[5])
+        given = str(safety_check1)+str(safety_check3)+str(safety_check5)
+        if gt == given and fw_detail_of == detail_of:
+            detail_of = data[0] 
+            break
+    
+    return detail_of
+
+
+
+
+
+# Get current year 
+from datetime import date
+CUR_YEAR = date.today().year
+
+import pandas as pd
+import plotly.express as px
+
+
+def find_start_year(key, value):
+    filter_query = "SELECT year FROM scholars WHERE"
+    filter_query = filter_query + " " + key + " = " + "\"" + value + "\""
+    conn = sqlite3.connect('scholars.db')
+    c = conn.cursor()
+    
+    START_YEAR = int(c.execute(filter_query).fetchall()[0][0])
+
+    return START_YEAR
+
+
+# Example: construct line chart with input key=uwc, value="Japan"
+# Line chart will show x=year and y=number_scholar
+def construct_line_chart(key, value):
+
+    year = find_start_year(key, value)
+
+    data = []
+    while year <= CUR_YEAR:
+
+        # Construct filter query
+        filter_query = "SELECT COUNT(*) FROM scholars WHERE"
+        filter_query = filter_query + " " + key + " = " + "\"" + value + "\""
+        filter_query = filter_query + " AND year = " + "\"" + str(year) + "\""
+
+        conn = sqlite3.connect('scholars.db')
+        c = conn.cursor()
+        line_data = c.execute(filter_query).fetchall()[0]
+
+        data.append([year, line_data[0]])
+
+        year = year + 1
+
+    index = []
+    for i in range(len(data)):
+        index.append(i)
+    
+    columns = ["year", "scholar"]
+
+    df = pd.DataFrame(data, index, columns)
+
+    line_chart = px.line(
+        df,
+        x="year",
+        y="scholar",
+        title="Total number of Davis scholars by year",
+        labels={
+            "year": "Year",
+            "scholar": "# Davis scholars"
+        }
+    )
+
+    line_chart.update_layout(
+        xaxis={'tickformat': ',d'},
+        font_family="Courier",
+        hoverlabel=dict(
+            bgcolor="white",
+            font_family="Courier"
+        )
+    )
+
+    return line_chart
+
+
+
+# key = uwc
+# t10_key = school
+def construct_bart10_chart(key, value, t10_key, t10_list):
+
+    conn = sqlite3.connect('scholars.db')
+    c = conn.cursor()
+
+    # Total number of scholar
+    total_scholar = "SELECT COUNT(*) FROM scholars WHERE"
+    total_scholar = total_scholar + " " + key + " = " + "\"" + value + "\""
+    total_scholar = c.execute(total_scholar).fetchall()[0][0]
+
+    data_t10 = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    columns_t10 = [None, None, None, None, None, None, None, None, None]
+    for t10_value in t10_list:
+        filter_query = "SELECT COUNT(*) FROM scholars WHERE"
+        filter_query = filter_query + " " + key + " = " + "\"" + value + "\""
+        filter_query = filter_query + " AND " + t10_key + " = " + "\"" + t10_value + "\""
+
+        bar_data = c.execute(filter_query).fetchall()[0]
+
+        scholars_at_t10_key = bar_data[0]
+
+        for i in range(9):
+
+            if scholars_at_t10_key > data_t10[i]:
+                data_t10[i] = scholars_at_t10_key
+                columns_t10[i] = t10_value
+                break
+    
+    data = []
+    for i in range(9):
+        data.append([columns_t10[8-i], round((data_t10[8-i]/total_scholar)*100)])
+
+    # Add in remaining of other for reference
+    remain = 100
+    for i in data:
+        remain = remain - i[1]
+    data.append(["Others", remain])
+    
+
+    columns = [t10_key, "scholar"]
+
+    index = []
+    for i in range(10):
+        index.append(i)
+
+    df = pd.DataFrame(data, index, columns)
+
+    bar_chart_t10 = px.bar(
+        df,
+        x="scholar",
+        y=t10_key,
+        orientation="h",
+        title= f"Total number of Davis scholars by {t10_key}",
+        labels={
+            "scholar": "Total Davis scholars (%)",
+            t10_key: ""
+        },
+        hover_data={
+            t10_key: False
+        },
+    )
+
+    bar_chart_t10.update_layout(
+        font_family="Courier",
+        hoverlabel=dict(
+            bgcolor="white",
+            font_family="Courier"
+        )
+    )
+
+    return bar_chart_t10
+
+
+
+
+
+
+
+
+def construct_bart05_chart(key, value, t05_key, t05_list):
+
+    conn = sqlite3.connect('scholars.db')
+    c = conn.cursor()
+
+    # Total number of scholar
+    total_scholar = "SELECT COUNT(*) FROM scholars WHERE"
+    total_scholar = total_scholar + " " + key + " = " + "\"" + value + "\""
+    total_scholar = c.execute(total_scholar).fetchall()[0][0]
+
+
+    data_t05 = [0, 0, 0, 0]
+    columns_t05 = [None, None, None, None]
+    for t05_value in t05_list:
+        filter_query = "SELECT COUNT(*) FROM scholars WHERE"
+        filter_query = filter_query + " " + key + " = " + "\"" + value + "\""
+        filter_query = filter_query + " AND " + t05_key + " = " + "\"" + t05_value + "\""
+
+        bar_data = c.execute(filter_query).fetchall()[0]
+
+        scholars_at_t05_key = bar_data[0]
+
+        for i in range(4):
+
+            if scholars_at_t05_key > data_t05[i]:
+                data_t05[i] = scholars_at_t05_key
+                columns_t05[i] = t05_value
+                break
+    
+    data = []
+    for i in range(4):
+        data.append([columns_t05[3-i], round((data_t05[3-i]/total_scholar)*100)])
+    
+    # Add in remainin of other for reference
+    remain = 100
+    for i in data:
+        remain = remain - i[1]
+    data.append(["Others", remain])
+
+    columns = [t05_key, "scholar"]
+
+    index = []
+    for i in range(5):
+        index.append(i)
+
+    df = pd.DataFrame(data, index, columns)
+
+    bar_chart_t05 = px.bar(
+        df,
+        x="scholar",
+        y=t05_key,
+        orientation="h",
+        title= f"Total number of Davis scholars by {t05_key}",
+        labels={
+            "scholar": "Total Davis scholars (%)",
+            t05_key: ""
+        },
+        hover_data={
+            t05_key: False
+        },
+    )
+
+    bar_chart_t05.update_layout(
+        font_family="Courier",
+        hoverlabel=dict(
+            bgcolor="white",
+            font_family="Courier"
+        )
+    )
+
+    return bar_chart_t05
+
