@@ -7,19 +7,13 @@ import sqlite3
 app.config['SECRET_KEY'] = '354e1ab4c6d9c6bc661c258a618947bf'
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
-from uwc_back import UserFilterDavis, construct_filter_query, construct_count_query, correction_filter
+from uwc_back import UserFilterDavis, construct_filter_query, construct_count_query, correction_filter, construct_correction_filter_query
+from uwc_back import construct_charts
 from uwc_back import list_school, list_uwc, list_countries
 
 from uwc_back import check_detail_of
 
 from img_scrap import all_uwc_img_src, all_country_img_src, all_school_img_src
-
-import pandas as pd
-import json
-import plotly
-import plotly.express as px
-
-from uwc_back import construct_line_chart, construct_bart10_chart, construct_bart05_chart
 
 
 @app.route("/", methods=['GET', 'POST'])
@@ -58,27 +52,7 @@ def home():
         
         # User does not enter anything in the form - reload page to give out filter correction
         if filter_query == "SELECT name, country, uwc, school, year FROM scholars":
-  
-            if 'all_correction' in session:
-                all_correction = session['all_correction']
-                session.pop('all_correction', None)
-
-                # Construct the filter query
-                add_AND = False
-                filter_query = filter_query + " WHERE"
-
-                for correction in all_correction:
-                    if add_AND == True:
-                        filter_query = filter_query + " AND"
-
-                    key = correction[0]
-                    value = correction[1]
-                    filter_query = filter_query + " " + key + " = " + "\"" + value + "\""
-                    add_AND = True
-
-                    flash(f'Filtering out the database for {value}', 'success')
-                
-                session['filter_query'] = filter_query
+            construct_correction_filter_query(filter_query)
             
         return redirect(url_for('home'))    
 
@@ -98,12 +72,21 @@ def home():
     combine_correction = ""
     if count == 0:
         all_correction = correction_filter(session['correction_filter_country'], session['correction_filter_uwc'], session['correction_filter_school'])
+        session['all_correction'] = all_correction
+        # all_correction = [
+        #    ["country", (country_name)],
+        #    ["uwc", (uwc_name)],
+        #    ["school", (school_name)],
+        # ]
+
+        # Clear session
         if 'correction_filter_country' in session:
             session.pop('correction_filter_country', None)
         if 'correction_filter_uwc' in session:
             session.pop('correction_filter_uwc', None)
         if 'correction_filter_school' in session:
             session.pop('correction_filter_school', None)    
+
         need_correction = True
 
         # Combine correction for display back at home
@@ -112,9 +95,6 @@ def home():
                 combine_correction = correction[1]
             else:
                 combine_correction = combine_correction + " + " + correction[1]
-
-        session['all_correction'] = all_correction
-
 
     return render_template('home.html', scholars=scholars, form=form, combine_correction = combine_correction, need_correction = need_correction)
 
@@ -135,19 +115,8 @@ def uwc():
 
 
     if request.method == 'POST':
-        view_detail = check_detail_of(phone_summary_all_uwc)
-
-        line_chart = construct_line_chart("uwc", view_detail)
-        line_chart_JSON = json.dumps(line_chart, cls=plotly.utils.PlotlyJSONEncoder)
-        session['line_chart_JSON'] = line_chart_JSON
-
-        bart10_chart = construct_bart10_chart("uwc", view_detail, "school", list_school)
-        bart10_chart_JSON = json.dumps(bart10_chart, cls=plotly.utils.PlotlyJSONEncoder)
-        session['bart10_chart_JSON'] = bart10_chart_JSON
-
-        bart05_chart = construct_bart05_chart("uwc", view_detail, "country", list_countries)
-        bart05_chart_JSON = json.dumps(bart05_chart, cls=plotly.utils.PlotlyJSONEncoder)
-        session['bart05_chart_JSON'] = bart05_chart_JSON
+        # construct-charts(phone_summary_all_key, key_line, key_t10, key_t05)
+        construct_charts(phone_summary_all_uwc, "uwc", "school", "country")
 
         return redirect("/detail")
         
@@ -168,19 +137,8 @@ def country():
     phone_summary_all_country = output_display_summary[2]
 
     if request.method == 'POST':
-        view_detail = check_detail_of(phone_summary_all_country)
-        
-        line_chart = construct_line_chart("country", view_detail)
-        line_chart_JSON = json.dumps(line_chart, cls=plotly.utils.PlotlyJSONEncoder)
-        session['line_chart_JSON'] = line_chart_JSON
-
-        bart10_chart = construct_bart10_chart("country", view_detail, "school", list_school)
-        bart10_chart_JSON = json.dumps(bart10_chart, cls=plotly.utils.PlotlyJSONEncoder)
-        session['bart10_chart_JSON'] = bart10_chart_JSON
-
-        bart05_chart = construct_bart05_chart("country", view_detail, "uwc", list_uwc)
-        bart05_chart_JSON = json.dumps(bart05_chart, cls=plotly.utils.PlotlyJSONEncoder)
-        session['bart05_chart_JSON'] = bart05_chart_JSON
+        # construct-charts(phone_summary_all_key, key_line, key_t10, key_t05)
+        construct_charts(phone_summary_all_country, "country", "school", "uwc")
 
         return redirect("/detail")
 
@@ -204,19 +162,8 @@ def school():
     phone_summary_all_school = output_display_summary[2]
 
     if request.method == 'POST':
-        view_detail = check_detail_of(phone_summary_all_school)
-        
-        line_chart = construct_line_chart("school", view_detail)
-        line_chart_JSON = json.dumps(line_chart, cls=plotly.utils.PlotlyJSONEncoder)
-        session['line_chart_JSON'] = line_chart_JSON
-
-        bart10_chart = construct_bart10_chart("school", view_detail, "country", list_countries)
-        bart10_chart_JSON = json.dumps(bart10_chart, cls=plotly.utils.PlotlyJSONEncoder)
-        session['bart10_chart_JSON'] = bart10_chart_JSON
-
-        bart05_chart = construct_bart05_chart("school", view_detail, "uwc", list_uwc)
-        bart05_chart_JSON = json.dumps(bart05_chart, cls=plotly.utils.PlotlyJSONEncoder)
-        session['bart05_chart_JSON'] = bart05_chart_JSON
+        # construct-charts(phone_summary_all_key, key_line, key_t10, key_t05)
+        construct_charts(phone_summary_all_school, "school", "country", "uwc")
 
         return redirect("/detail")
 

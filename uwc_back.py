@@ -8,6 +8,11 @@ from iso3166 import countries
 import math
 import sqlite3
 
+import pandas as pd
+import json
+import plotly
+import plotly.express as px
+
 
 
 
@@ -110,6 +115,32 @@ def correction_filter(country, uwc, school):
         
 
     return all_correction
+
+
+
+def construct_correction_filter_query(filter_query):
+    if 'all_correction' in session:
+        all_correction = session['all_correction']
+        session.pop('all_correction', None)
+
+        add_AND = False
+        filter_query = filter_query + " WHERE"
+
+        for correction in all_correction:
+
+            if add_AND == True:
+                filter_query = filter_query + " AND"
+
+            key = correction[0]
+            value = correction[1]
+
+            filter_query = filter_query + " " + key + " = " + "\"" + value + "\""
+
+            add_AND = True
+
+            flash(f'Filtering out the database for {value}', 'success')
+        
+        session['filter_query'] = filter_query
 
 
 
@@ -662,3 +693,31 @@ def construct_bart05_chart(key, value, t05_key, t05_list):
 
     return bar_chart_t05
 
+
+
+def construct_charts(phone_summary_all_key, key_line, key_t10, key_t05):
+    view_detail = check_detail_of(phone_summary_all_key)
+
+    line_chart = construct_line_chart(key_line, view_detail)
+    line_chart_JSON = json.dumps(line_chart, cls=plotly.utils.PlotlyJSONEncoder)
+    session['line_chart_JSON'] = line_chart_JSON
+
+    if key_t10 == "uwc":
+        list_t10 = list_uwc
+    elif key_t10 == "country":
+        list_t10 = list_countries
+    elif key_t10 == "school":
+        list_t10 = list_school
+    bart10_chart = construct_bart10_chart(key_line, view_detail, key_t10, list_t10)
+    bart10_chart_JSON = json.dumps(bart10_chart, cls=plotly.utils.PlotlyJSONEncoder)
+    session['bart10_chart_JSON'] = bart10_chart_JSON
+
+    if key_t05 == "uwc":
+        list_t05 = list_uwc
+    elif key_t05 == "country":
+        list_t05 = list_countries
+    elif key_t05 == "school":
+        list_t05 = list_school
+    bart05_chart = construct_bart05_chart(key_line, view_detail, key_t05, list_t05)
+    bart05_chart_JSON = json.dumps(bart05_chart, cls=plotly.utils.PlotlyJSONEncoder)
+    session['bart05_chart_JSON'] = bart05_chart_JSON
