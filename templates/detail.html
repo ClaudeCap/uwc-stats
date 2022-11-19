@@ -1,9 +1,21 @@
 {% extends "layout.html" %}
 {% block content %}
+
+    <div align="center" class="pt-5 mt-5">
+        <button type="submit" class="btn btn-outline-dark btn-lg mb-3">
+            <h2>{{detail_of[0]}}</h2>
+        </button>
+    </div>
+
        
+    {% if charts %}
     <div id="line_chart" class="chart"></div>
     <div id="bart10_chart" class="chart"></div>
     <div id="bart05_chart" class="chart"></div>
+
+    {% else %}
+        <h1 align="center" class="my-5 pt-5">No Data</h1>
+    {% endif %}
 
 {% endblock content %}
 

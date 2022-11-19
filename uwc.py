@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, session, url_for
-from flask import flash, request
+from flask import request
+from flask import flash, Markup
 app = Flask(__name__)
 
 import sqlite3
@@ -11,7 +12,7 @@ from uwc_back import UserFilterDavis, construct_filter_query, construct_count_qu
 from uwc_back import construct_charts
 from uwc_back import list_school, list_uwc, list_countries
 
-from uwc_back import check_detail_of
+from uwc_back import filter_view_charts
 
 from img_scrap import all_uwc_img_src, all_country_img_src, all_school_img_src
 
@@ -53,7 +54,7 @@ def home():
         # User does not enter anything in the form - reload page to give out filter correction
         if filter_query == "SELECT name, country, uwc, school, year FROM scholars":
             construct_correction_filter_query(filter_query)
-            
+
         return redirect(url_for('home'))    
 
 
@@ -95,6 +96,12 @@ def home():
                 combine_correction = correction[1]
             else:
                 combine_correction = combine_correction + " + " + correction[1]
+
+
+    # view chart from one varibale filter
+    if filter_query != "SELECT name, country, uwc, school, year FROM scholars" and count != 0:
+        filter_view_charts(filter_query)
+
 
     return render_template('home.html', scholars=scholars, form=form, combine_correction = combine_correction, need_correction = need_correction)
 
@@ -179,7 +186,16 @@ def detail():
     bart10_chart_JSON = session['bart10_chart_JSON']
     bart05_chart_JSON = session['bart05_chart_JSON']
 
-    return render_template("detail.html", line_chart_JSON=line_chart_JSON, bart10_chart_JSON=bart10_chart_JSON, bart05_chart_JSON=bart05_chart_JSON)
+    key_charts = session['key_charts']
+    value_charts = session['value_charts']
+    detail_of=[value_charts]
+
+    
+    # True if there are charts to be display
+    charts = session['charts']
+
+
+    return render_template("detail.html", charts=charts,detail_of=detail_of, line_chart_JSON=line_chart_JSON, bart10_chart_JSON=bart10_chart_JSON, bart05_chart_JSON=bart05_chart_JSON)
 
 
 

@@ -1,4 +1,5 @@
-from flask import flash, session
+from flask import flash, Markup
+from flask import session
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from fuzzywuzzy import fuzz
@@ -480,7 +481,10 @@ def find_start_year(key, value):
     filter_query = filter_query + " " + key + " = " + "\"" + value + "\""
     conn = sqlite3.connect('scholars.db')
     c = conn.cursor()
-    
+
+    if len(c.execute(filter_query).fetchall()) == 0:
+        return None
+
     START_YEAR = int(c.execute(filter_query).fetchall()[0][0])
 
     return START_YEAR
@@ -695,8 +699,20 @@ def construct_bart05_chart(key, value, t05_key, t05_list):
 
 
 
-def construct_charts(phone_summary_all_key, key_line, key_t10, key_t05):
-    view_detail = check_detail_of(phone_summary_all_key)
+def construct_charts(determine_detail_to_view, key_line, key_t10, key_t05):
+
+    if len(determine_detail_to_view) == 1:
+        view_detail = determine_detail_to_view[0]
+    else: 
+        view_detail = check_detail_of(determine_detail_to_view)
+    session['key_charts'] = key_line
+    session['value_charts'] = view_detail
+
+    # No data in database
+    # Thus no charts to display
+    if find_start_year(key_line, view_detail) == None:
+        session['charts'] = False
+        return None
 
     line_chart = construct_line_chart(key_line, view_detail)
     line_chart_JSON = json.dumps(line_chart, cls=plotly.utils.PlotlyJSONEncoder)
@@ -721,3 +737,26 @@ def construct_charts(phone_summary_all_key, key_line, key_t10, key_t05):
     bart05_chart = construct_bart05_chart(key_line, view_detail, key_t05, list_t05)
     bart05_chart_JSON = json.dumps(bart05_chart, cls=plotly.utils.PlotlyJSONEncoder)
     session['bart05_chart_JSON'] = bart05_chart_JSON
+
+    session['charts'] = True
+    return 1
+
+
+
+def filter_view_charts(filter_query):
+    # extract value of the key uwc
+    start_index = filter_query.index("\"")
+    filter_query = filter_query.replace("\"", "")
+    value = filter_query[start_index:]
+
+    # View chart from filter if we are only filtering one keyword at a time
+    if "AND" not in filter_query:
+        if "WHERE uwc" in filter_query:
+            construct_charts([value], "uwc", "school", "country")
+        elif "WHERE country" in filter_query:
+            construct_charts([value], "country", "school", "uwc")
+        elif "WHERE school" in filter_query:
+            construct_charts([value], "school", "country", "uwc")
+
+        flash(Markup('<a href="/detail" class="nav-link"> (click here to view in detail) </a>'), 'success')
+    
