@@ -24,13 +24,25 @@ from flask import Markup
 
 
 
-filter_query = """
-    SELECT name, country, uwc, school, year FROM scholars WHERE uwc = "Hey"
-"""
 
+
+
+
+
+from uwc_back import blur
+
+
+filter_query = """
+    SELECT * FROM scholars
+"""
 
 conn_scholars = sqlite3.connect('scholars.db')
 c_scholars = conn_scholars.cursor()
-scholars = c_scholars.execute(filter_query).fetchall()
+sql_scholars = c_scholars.execute(filter_query).fetchall()
+
+scholars = []
+for scholar in sql_scholars:
+    scholars.append(list(scholar))
+scholars = blur(scholars)
 
 print(scholars)

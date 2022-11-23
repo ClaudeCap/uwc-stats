@@ -25,6 +25,8 @@ class UserFilterDavis(FlaskForm):
     year = StringField('Year')
     submit = SubmitField('Filter Data')
 
+
+    
 def construct_filter_query(form):
 
     filter_query = 'SELECT name, country, uwc, school, year FROM scholars'
@@ -59,6 +61,7 @@ def construct_filter_query(form):
     
     return filter_query
 
+
 def construct_count_query(form):
     count_query = "SELECT COUNT(*) FROM scholars"
 
@@ -79,6 +82,30 @@ def construct_count_query(form):
     return count_query
 
 
+def blur(sql_scholars):
+    scholars = []
+    for scholar in sql_scholars:
+        scholars.append(list(scholar))
+
+    for scholar in scholars:
+        blur_name = scholar[0][0]
+
+        name_length = len(scholar[0])
+        show = False
+        for i in range(name_length-1):
+            if scholar[0][i] == " ":
+                blur_name = blur_name + " "
+                show = True
+            elif show == True:
+                blur_name = blur_name + scholar[0][i]
+                show = False
+            else:
+                blur_name = blur_name + "*"
+
+        scholar[0] = blur_name
+    
+    return scholars
+
 
 def correction_filter(country, uwc, school):
     all_correction = []
@@ -91,7 +118,7 @@ def correction_filter(country, uwc, school):
                 break
 
             cut_off = cut_off - 10
-        
+    
 
     if uwc != None:
         cut_off = 100
@@ -116,7 +143,6 @@ def correction_filter(country, uwc, school):
         
 
     return all_correction
-
 
 
 def construct_correction_filter_query(filter_query):
@@ -144,7 +170,6 @@ def construct_correction_filter_query(filter_query):
         session['filter_query'] = filter_query
 
 
-
 # https://www.datacamp.com/tutorial/fuzzy-string-python
 def fuzzywuzzy_check_w_list(str2Match, list_x, cut_off):
     for strOption in list_x:
@@ -159,7 +184,6 @@ def fuzzywuzzy_check_w_list(str2Match, list_x, cut_off):
 
 
 
-
 def fuzzywuzzy_check_w_string(str2Match, strOption, cut_off):
     Ratios = fuzz.ratio(str2Match, strOption)
     Partial_ratio = fuzz.partial_ratio(str2Match, strOption)
@@ -168,8 +192,6 @@ def fuzzywuzzy_check_w_string(str2Match, strOption, cut_off):
 
     if Ratios > cut_off or Partial_ratio > cut_off or Token_Sort_Ratio > cut_off or Token_Set_Ratio > cut_off:
         return strOption
-
-
 
 
 
@@ -199,8 +221,6 @@ list_previous_countries = [
 list_countries.append("Tibet")
 
 
-
-
 # List of all UWC keyword
 list_uwc = [
     "UWC Atlantic",
@@ -224,7 +244,6 @@ list_uwc = [
     "Simon Bolivar UWC of Agriculture"
 ]
 list_uwc.sort()
-
 
 
 
@@ -435,8 +454,6 @@ def display_summary(all_key_img_src, type_key, type_value_1, type_value_2, list_
 
 
 
-
-
 # The value from submit button only return one word
 # "University of California"
 # Will only return "University"
@@ -463,8 +480,6 @@ def check_detail_of(phone_summary_all_x):
             break
     
     return detail_of
-
-
 
 
 
@@ -619,12 +634,6 @@ def construct_bart10_chart(key, value, t10_key, t10_list):
     return bar_chart_t10
 
 
-
-
-
-
-
-
 def construct_bart05_chart(key, value, t05_key, t05_list):
 
     conn = sqlite3.connect('scholars.db')
@@ -750,7 +759,7 @@ def filter_view_charts(filter_query):
     value = filter_query[start_index:]
 
     # View chart from filter if we are only filtering one keyword at a time
-    if "AND" not in filter_query:
+    if "AND" not in filter_query and "WHERE name" not in filter_query and "WHERE year" not in filter_query:
         if "WHERE uwc" in filter_query:
             construct_charts([value], "uwc", "school", "country")
         elif "WHERE country" in filter_query:
@@ -759,4 +768,4 @@ def filter_view_charts(filter_query):
             construct_charts([value], "school", "country", "uwc")
 
         flash(Markup('<a href="/detail" class="nav-link"> (click here to view in detail) </a>'), 'success')
-    
+

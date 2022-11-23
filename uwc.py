@@ -8,7 +8,7 @@ import sqlite3
 app.config['SECRET_KEY'] = '354e1ab4c6d9c6bc661c258a618947bf'
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
-from uwc_back import UserFilterDavis, construct_filter_query, construct_count_query, correction_filter, construct_correction_filter_query
+from uwc_back import UserFilterDavis, blur, construct_filter_query, construct_count_query, correction_filter, construct_correction_filter_query
 from uwc_back import construct_charts
 from uwc_back import list_school, list_uwc, list_countries
 
@@ -61,7 +61,8 @@ def home():
     # Search databse for the filter output
     conn_scholars = sqlite3.connect('scholars.db')
     c_scholars = conn_scholars.cursor()
-    scholars = c_scholars.execute(filter_query)
+    scholars = c_scholars.execute(filter_query).fetchall()
+    scholars = blur(scholars)
 
     # Search database for counting number of output
     conn_count = sqlite3.connect('scholars.db')
@@ -101,6 +102,7 @@ def home():
     # view chart from one varibale filter
     if filter_query != "SELECT name, country, uwc, school, year FROM scholars" and count != 0:
         filter_view_charts(filter_query)
+
 
 
     return render_template('home.html', scholars=scholars, form=form, combine_correction = combine_correction, need_correction = need_correction)
@@ -189,11 +191,9 @@ def detail():
     key_charts = session['key_charts']
     value_charts = session['value_charts']
     detail_of=[value_charts]
-
     
     # True if there are charts to be display
     charts = session['charts']
-
 
     return render_template("detail.html", charts=charts,detail_of=detail_of, line_chart_JSON=line_chart_JSON, bart10_chart_JSON=bart10_chart_JSON, bart05_chart_JSON=bart05_chart_JSON)
 
